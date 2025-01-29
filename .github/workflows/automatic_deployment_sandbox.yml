@@ -19,6 +19,9 @@ jobs:
 
       - name: Install Stencil CLI
         run: npm install -g @bigcommerce/stencil-cli
+        
+      - name: Run stencil
+        run: stencil init
 
       - name: Deploy Theme
         env:
