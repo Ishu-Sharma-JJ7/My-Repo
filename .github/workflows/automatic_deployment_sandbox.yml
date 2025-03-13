@@ -2,20 +2,39 @@ name: Deploy to BigCommerce
 
 on:
   push:
-    branches:
-      - main  # Change if deploying from another branch
+    branches: [main]  # Change if deploying from another branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
+    strategy:
+      matrix:
+        node: [18.x]
+        
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
-      - name: Install Stencil CLI
-        run: |
-          npm install -g @bigcommerce/stencil-cli
+     - name: Use Node.js ${{ matrix.node }}
+      uses: actions/setup-node@v2-beta
+      with:
+        node-version: ${{ matrix.node }}
+
+    - name: npm cache
+      uses: actions/cache@v2
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - name: Install Stencil CLI Dependency
+      run: npm install -g @bigcommerce/stencil-cli
+
+    - name: Install Dependencies
+      run: npm install --force
+
 
       - name: Authenticate with BigCommerce
         run: |
@@ -27,6 +46,6 @@ jobs:
             "normal_store_url": "https://${{ secrets.BC_STORE_HASH }}.mybigcommerce.com"
           }' > ~/.stencil/stencil.json
 
-      - name: Deploy Theme to BigCommerce
-        run: |
-          stencil push --ignore "*.git*" --delete --activate
+    - name: Push theme live, automatically deleting oldest theme if necessary
+      run: stencil push -a -d
+
